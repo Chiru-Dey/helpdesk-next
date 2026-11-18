@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
@@ -13,15 +15,24 @@ export default function HomePage() {
           protected by a strict ticket state machine.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Link
+            href="/login"
+            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-400"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/register"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500"
+          >
+            Create account
+          </Link>
           <a
             href="/api/health"
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-400"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-500"
           >
             API health
           </a>
-          <span className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300">
-            Next.js · TiDB · Drizzle
-          </span>
         </div>
       </div>
     </main>

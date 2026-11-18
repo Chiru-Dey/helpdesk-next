@@ -495,6 +495,15 @@ export async function addComment(
     })
     .$returningId();
 
+  await recordAudit({
+    actorId: user.id,
+    action: "comment.created",
+    entityType: "comment",
+    entityId: String(inserted[0].id),
+    metadata: { ticket_id: ticketId, is_internal: isInternal },
+    ipAddress: requestInfo.ipAddress,
+  });
+
   const rows = await db
     .select({
       id: comments.id,
