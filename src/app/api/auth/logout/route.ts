@@ -1,29 +1,13 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { recordAudit } from "@/lib/audit";
-import {
-  REFRESH_COOKIE,
-  clearSessionCookies,
-} from "@/lib/auth/session";
-import { revokeRefreshToken } from "@/lib/auth/tokens";
+import { revokeByHash } from "@/lib/auth/jwt";
+import { REFRESH_COOKIE, clearCookies } from "@/lib/auth/session";
 
 export async function POST() {
   const store = await cookies();
   const presented = store.get(REFRESH_COOKIE)?.value;
-
-  if (presented) {
-    const revoked = await revokeRefreshToken(presented);
-    if (revoked) {
-      await recordAudit({
-        actorId: revoked.userId,
-        action: "auth.logout",
-        entityType: "user",
-        entityId: String(revoked.userId),
-      });
-    }
-  }
-
-  const body = NextResponse.json({ data: { logged_out: true } });
-  clearSessionCookies(body);
+  if (presented) await revokeByHash(presented);
+  const body = NextResponse.json({ logged_out: true });
+  clearCookies(body);
   return body;
 }

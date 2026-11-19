@@ -1,135 +1,64 @@
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "../db";
-import { errorResponse } from "../http";
-import { users, type Role, type User } from "../schema";
+import type { Role } from "../db/schema";
 import {
-  ACCESS_TOKEN_TTL_SECONDS,
-  REFRESH_TOKEN_TTL_SECONDS,
-  createRefreshToken,
-  signAccessToken,
-  verifyAccessToken,
-  type RequestInfo,
-} from "./tokens";
+  ACCESS_TTL,
+  REFRESH_TTL,
+  createRefresh,
+  signAccess,
+  verifyAccess,
+} from "./jwt";
 
 export const ACCESS_COOKIE = "hd_access";
 export const REFRESH_COOKIE = "hd_refresh";
 
-export function cookieOptionsPublic(
-  maxAge: number,
-  path: string,
-  sameSite: "lax" | "strict",
-) {
-  return {
-    httpOnly: true,
-    sameSite,
-    secure: process.env.NODE_ENV === "production",
-    path,
-    maxAge,
-  };
+export interface SessionUser {
+  id: number;
+  role: Role;
+  email: string;
+  name: string;
 }
 
-export async function getRequestInfo(): Promise<RequestInfo> {
-  const headerStore = await headers();
-  const forwarded = headerStore.get("x-forwarded-for");
-  const ipAddress = forwarded
-    ? forwarded.split(",")[0]?.trim() ?? null
-    : headerStore.get("x-real-ip");
-  return { userAgent: headerStore.get("user-agent"), ipAddress };
+function cookieOpts(maxAge: number, path: string, sameSite: "lax" | "strict") {
+  return { httpOnly: true, sameSite, secure: process.env.NODE_ENV === "production", path, maxAge };
 }
 
 export async function issueSession(
-  userId: number,
-  role: Role,
-  email: string,
-  response: NextResponse,
-  requestInfo: RequestInfo,
+  user: SessionUser,
+  res: NextResponse,
 ): Promise<void> {
-  const accessToken = await signAccessToken({
-    sub: String(userId),
-    role,
-    email,
+  const access = await signAccess({
+    sub: String(user.id),
+    role: user.role,
+    email: user.email,
+    name: user.name,
   });
-  const refresh = await createRefreshToken(userId, null, requestInfo);
-  response.cookies.set(
-    ACCESS_COOKIE,
-    accessToken,
-    cookieOptionsPublic(ACCESS_TOKEN_TTL_SECONDS, "/", "lax"),
-  );
-  response.cookies.set(
-    REFRESH_COOKIE,
-    refresh.token,
-    cookieOptionsPublic(REFRESH_TOKEN_TTL_SECONDS, "/api/auth", "strict"),
-  );
+  const refresh = await createRefresh(user.id);
+  res.cookies.set(ACCESS_COOKIE, access, cookieOpts(ACCESS_TTL, "/", "lax"));
+  res.cookies.set(REFRESH_COOKIE, refresh, cookieOpts(REFRESH_TTL, "/api/auth", "strict"));
 }
 
-export function clearSessionCookies(response: NextResponse): void {
-  response.cookies.set(ACCESS_COOKIE, "", {
-    ...cookieOptionsPublic(ACCESS_TOKEN_TTL_SECONDS, "/", "lax"),
-    maxAge: 0,
-  });
-  response.cookies.set(REFRESH_COOKIE, "", {
-    ...cookieOptionsPublic(REFRESH_TOKEN_TTL_SECONDS, "/api/auth", "strict"),
-    maxAge: 0,
-  });
+export function clearCookies(res: NextResponse): void {
+  res.cookies.set(ACCESS_COOKIE, "", { ...cookieOpts(ACCESS_TTL, "/", "lax"), maxAge: 0 });
+  res.cookies.set(REFRESH_COOKIE, "", { ...cookieOpts(REFRESH_TTL, "/api/auth", "strict"), maxAge: 0 });
 }
 
-export async function getCurrentUser(): Promise<User | null> {
-  const store = await cookies();
-  const accessToken = store.get(ACCESS_COOKIE)?.value;
-  if (!accessToken) {
-    return null;
+export async function getSessionUser(): Promise<SessionUser | null> {
+  // 1. Bearer header (PowerShell / API clients)
+  const h = await headers();
+  const bearer = h.get("authorization");
+  let token: string | null = null;
+  if (bearer?.startsWith("Bearer ")) {
+    token = bearer.slice(7);
+  } else {
+    // 2. Cookie
+    const c = await cookies();
+    token = c.get(ACCESS_COOKIE)?.value ?? null;
   }
-  const payload = await verifyAccessToken(accessToken);
-  if (!payload) {
-    return null;
-  }
-  const userId = Number(payload.sub);
-  if (!Number.isInteger(userId)) {
-    return null;
-  }
-  const rows = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  const user = rows[0];
-  if (!user || !user.isActive) {
-    return null;
-  }
-  return user;
-}
-
-export type GuardResult =
-  | { ok: true; user: User }
-  | { ok: false; response: NextResponse };
-
-export async function requireAuth(): Promise<GuardResult> {
-  const user = await getCurrentUser();
-  if (!user) {
-    return {
-      ok: false,
-      response: errorResponse(401, "unauthenticated", "Authentication required."),
-    };
-  }
-  return { ok: true, user };
-}
-
-export async function requireRole(...roles: Role[]): Promise<GuardResult> {
-  const base = await requireAuth();
-  if (!base.ok) {
-    return base;
-  }
-  if (!roles.includes(base.user.role)) {
-    return {
-      ok: false,
-      response: errorResponse(
-        403,
-        "forbidden",
-        "You do not have permission to perform this action.",
-      ),
-    };
-  }
-  return base;
+  if (!token) return null;
+  const claims = await verifyAccess(token);
+  if (!claims) return null;
+  const id = Number(claims.sub);
+  if (!Number.isInteger(id)) return null;
+  return { id, role: claims.role, email: claims.email, name: claims.name };
 }

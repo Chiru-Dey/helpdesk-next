@@ -1,23 +1,25 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { requireRole } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { fromApiError, fromZodError } from "@/lib/api/respond";
+import { requireRole } from "@/lib/auth/guards";
+import { createUser, listUsers } from "@/lib/services/users";
+import { createUserSchema } from "@/lib/validation";
 
 export async function GET() {
-  const guard = await requireRole("admin", "agent");
-  if (!guard.ok) {
-    return guard.response;
-  }
-  const rows = await db
-    .select({
-      id: users.id,
-      role: users.role,
-      email: users.email,
-      display_name: users.displayName,
-    })
-    .from(users)
-    .where(eq(users.isActive, true))
-    .orderBy(users.displayName);
-  return NextResponse.json({ data: rows });
+  const guard = await requireRole("admin");
+  if (!guard.ok) return guard.res;
+  try {
+    const items = await listUsers(guard.user);
+    return NextResponse.json({ items });
+  } catch (e) { return fromApiError(e); }
+}
+
+export async function POST(request: Request) {
+  const guard = await requireRole("admin");
+  if (!guard.ok) return guard.res;
+  const parsed = createUserSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return fromZodError(parsed.error);
+  try {
+    const user = await createUser(guard.user, parsed.data);
+    return NextResponse.json(user, { status: 201 });
+  } catch (e) { return fromApiError(e); }
 }
