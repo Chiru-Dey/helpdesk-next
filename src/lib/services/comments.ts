@@ -2,7 +2,7 @@
 
 import { asc, count, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
-import { cacheTag, revalidateTag } from "next/cache";
+import { cacheTag } from "next/cache";
 import { notFound } from "../api/errors";
 import { buildMeta, offset, type PaginationInput } from "../api/pagination";
 import type { SessionUser } from "../auth/session";
@@ -102,8 +102,7 @@ export async function addComment(
     .values({ ticketId, authorId: user.id, body: input.body })
     .$returningId();
 
-  revalidateTag(`comments:${ticketId}`, "max");
-  revalidateTag("tickets", "max");
+  // revalidateTag removed — moved to route handler
 
   const rows = await db
     .select({

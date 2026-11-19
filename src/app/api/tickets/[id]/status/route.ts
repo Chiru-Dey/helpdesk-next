@@ -1,12 +1,11 @@
 import { after, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { fromApiError } from "@/lib/api/respond";
 import { requireRole } from "@/lib/auth/guards";
 import { changeStatus } from "@/lib/services/tickets";
 import { ticketStatusChangedEmail } from "@/lib/email/templates";
 
-interface Ctx {
-  params: Promise<{ id: string }>;
-}
+interface Ctx { params: Promise<{ id: string }> }
 
 export async function POST(req: Request, ctx: Ctx) {
   const guard = await requireRole("agent", "admin");
@@ -16,13 +15,12 @@ export async function POST(req: Request, ctx: Ctx) {
   try {
     const body = await req.json();
 
-    // Fetch current ticket to get old status
     const { getTicket } = await import("@/lib/services/tickets");
     const currentTicket = await getTicket(guard.user, Number(id));
 
     const ticket = await changeStatus(guard.user, Number(id), body);
+    revalidateTag("tickets", "max");
 
-    // Send email AFTER response using after()
     if (currentTicket.status !== ticket.status) {
       after(async () => {
         ticketStatusChangedEmail({

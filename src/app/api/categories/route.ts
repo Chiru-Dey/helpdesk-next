@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { fromApiError, fromZodError } from "@/lib/api/respond";
 import { requireAuth, requireRole } from "@/lib/auth/guards";
@@ -16,6 +17,10 @@ export async function POST(request: Request) {
   if (!guard.ok) return guard.res;
   const parsed = createCategorySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return fromZodError(parsed.error);
-  try { return NextResponse.json(await createCategory(guard.user, parsed.data), { status: 201 }); }
+  try {
+    const cat = await createCategory(guard.user, parsed.data);
+    revalidateTag("categories", "max");
+    return NextResponse.json(cat, { status: 201 });
+  }
   catch (e) { return fromApiError(e); }
 }

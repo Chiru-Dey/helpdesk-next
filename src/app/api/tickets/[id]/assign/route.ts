@@ -1,12 +1,11 @@
 import { after, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { fromApiError } from "@/lib/api/respond";
 import { requireRole } from "@/lib/auth/guards";
 import { assignTicket } from "@/lib/services/tickets";
 import { ticketAssignedEmail } from "@/lib/email/templates";
 
-interface Ctx {
-  params: Promise<{ id: string }>;
-}
+interface Ctx { params: Promise<{ id: string }> }
 
 export async function POST(req: Request, ctx: Ctx) {
   const guard = await requireRole("admin");
@@ -15,8 +14,8 @@ export async function POST(req: Request, ctx: Ctx) {
 
   try {
     const ticket = await assignTicket(guard.user, Number(id), await req.json());
+    revalidateTag("tickets", "max");
 
-    // Send email AFTER response using after()
     if (ticket.assignee_id && ticket.assignee_name) {
       after(async () => {
         ticketAssignedEmail({

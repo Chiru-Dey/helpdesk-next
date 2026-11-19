@@ -1,7 +1,7 @@
 "use cache";
 
 import { eq } from "drizzle-orm";
-import { cacheTag, revalidateTag } from "next/cache";
+import { cacheTag } from "next/cache";
 import { ApiError, conflict, forbidden, notFound } from "../api/errors";
 import { hashPassword } from "../auth/password";
 import type { SessionUser } from "../auth/session";
@@ -58,7 +58,7 @@ export async function createUser(admin: SessionUser, body: unknown): Promise<Use
     .insert(users)
     .values({ name: input.name, email, passwordHash, role: input.role })
     .$returningId();
-  revalidateTag("users", "max");
+  // revalidateTag removed — moved to route handler
   return getUser(admin, inserted[0].id);
 }
 
@@ -77,7 +77,7 @@ export async function patchUser(admin: SessionUser, id: number, body: unknown): 
 
   if (Object.keys(set).length === 0) throw new ApiError(400, "validation_error", "No changes.");
   await db.update(users).set(set).where(eq(users.id, id));
-  revalidateTag("users", "max");
+  // revalidateTag removed — moved to route handler
   return getUser(admin, id);
 }
 
@@ -92,9 +92,9 @@ export async function deleteUser(admin: SessionUser, id: number): Promise<void> 
     .limit(1);
   if (ticketExists[0]) {
     await db.update(users).set({ isActive: false }).where(eq(users.id, id));
-    revalidateTag("users", "max");
+    // revalidateTag removed — moved to route handler
     return;
   }
   await db.delete(users).where(eq(users.id, id));
-  revalidateTag("users", "max");
+  // revalidateTag removed — moved to route handler
 }

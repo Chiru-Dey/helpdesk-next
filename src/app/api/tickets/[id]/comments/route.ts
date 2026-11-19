@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { fromApiError } from "@/lib/api/respond";
 import { requireAuth } from "@/lib/auth/guards";
@@ -20,6 +21,10 @@ export async function POST(req: Request, ctx: Ctx) {
   const guard = await requireAuth();
   if (!guard.ok) return guard.res;
   const { id } = await ctx.params;
-  try { return NextResponse.json(await addComment(guard.user, Number(id), await req.json()), { status: 201 }); }
-  catch (e) { return fromApiError(e); }
+  try {
+    const comment = await addComment(guard.user, Number(id), await req.json());
+    revalidateTag(`comments:${id}`, "max");
+    revalidateTag("tickets", "max");
+    return NextResponse.json(comment, { status: 201 });
+  } catch (e) { return fromApiError(e); }
 }

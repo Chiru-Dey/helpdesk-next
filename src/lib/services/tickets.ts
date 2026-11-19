@@ -2,7 +2,7 @@
 
 import { and, count, desc, eq, isNull, like, or, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
-import { cacheTag, revalidateTag } from "next/cache";
+import { cacheTag } from "next/cache";
 import { ApiError, conflict, forbidden, notFound, unprocessable } from "../api/errors";
 import { buildMeta, offset, type PaginationInput } from "../api/pagination";
 import type { SessionUser } from "../auth/session";
@@ -146,7 +146,7 @@ export async function createTicket(user: SessionUser, body: unknown): Promise<Ti
       categoryId: input.category_id ?? null,
     })
     .$returningId();
-  revalidateTag("tickets", "max");
+  // revalidateTag removed — moved to route handler
   return getTicket(user, inserted[0].id);
 }
 
@@ -186,7 +186,7 @@ export async function patchTicket(
 
   if (Object.keys(set).length === 0) throw new ApiError(400, "validation_error", "No changes.");
   await db.update(tickets).set(set).where(eq(tickets.id, id));
-  revalidateTag("tickets", "max");
+  // revalidateTag removed — moved to route handler
   return getTicket(user, id);
 }
 
@@ -195,7 +195,7 @@ export async function deleteTicket(user: SessionUser, id: number): Promise<void>
   const existing = await db.select({ id: tickets.id }).from(tickets).where(eq(tickets.id, id)).limit(1);
   if (!existing[0]) throw notFound("Ticket not found.");
   await db.delete(tickets).where(eq(tickets.id, id));
-  revalidateTag("tickets", "max");
+  // revalidateTag removed — moved to route handler
 }
 
 export async function assignTicket(
@@ -221,7 +221,7 @@ export async function assignTicket(
   }
 
   await db.update(tickets).set({ assigneeId: input.assignee_id }).where(eq(tickets.id, id));
-  revalidateTag("tickets", "max");
+  // revalidateTag removed — moved to route handler
   return getTicket(user, id);
 }
 
@@ -250,6 +250,6 @@ export async function changeStatus(
   if (input.status === "open" || input.status === "in_progress") set.resolvedAt = null;
 
   await db.update(tickets).set(set).where(eq(tickets.id, id));
-  revalidateTag("tickets", "max");
+  // revalidateTag removed — moved to route handler
   return getTicket(user, id);
 }

@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { fromApiError } from "@/lib/api/respond";
 import { requireAuth } from "@/lib/auth/guards";
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
   if (!guard.ok) return guard.res;
   try {
     const ticket = await createTicket(guard.user, await request.json());
+    revalidateTag("tickets", "max");
     return NextResponse.json(ticket, { status: 201 });
   } catch (e) { return fromApiError(e); }
 }

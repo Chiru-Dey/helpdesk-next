@@ -1,3 +1,5 @@
+"use cache";
+
 import { and, count, eq, gte, isNull, lte } from "drizzle-orm";
 import { cacheTag } from "next/cache";
 import { forbidden } from "../api/errors";
@@ -33,7 +35,6 @@ export async function getDashboard(user: SessionUser): Promise<DashboardData> {
   const endOfDay = new Date();
   endOfDay.setHours(23, 59, 59, 999);
 
-  // ⚡ Promise.all: 5 independent reads → 1 parallel batch
   const [statusRows, prioRows, resolvedTodayRows, unassignedRows, recentRows] =
     await Promise.all([
       db

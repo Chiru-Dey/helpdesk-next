@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { fromApiError, fromZodError } from "@/lib/api/respond";
 import { requireRole } from "@/lib/auth/guards";
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return fromZodError(parsed.error);
   try {
     const user = await createUser(guard.user, parsed.data);
+    revalidateTag("users", "max");
     return NextResponse.json(user, { status: 201 });
   } catch (e) { return fromApiError(e); }
 }

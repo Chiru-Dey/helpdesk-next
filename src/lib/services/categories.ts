@@ -1,7 +1,7 @@
 "use cache";
 
 import { eq } from "drizzle-orm";
-import { cacheTag, revalidateTag } from "next/cache";
+import { cacheTag } from "next/cache";
 import { ApiError, conflict, forbidden, notFound } from "../api/errors";
 import type { SessionUser } from "../auth/session";
 import { db } from "../db/client";
@@ -38,7 +38,7 @@ export async function createCategory(user: SessionUser, body: unknown): Promise<
     .insert(categories)
     .values({ name: input.name, description: input.description ?? null })
     .$returningId();
-  revalidateTag("categories", "max");
+  // revalidateTag removed — moved to route handler
   const rows = await db.select().from(categories).where(eq(categories.id, inserted[0].id)).limit(1);
   return map(rows[0]);
 }
@@ -53,7 +53,7 @@ export async function patchCategory(user: SessionUser, id: number, body: unknown
   if (input.description !== undefined) set.description = input.description;
   if (Object.keys(set).length === 0) throw new ApiError(400, "validation_error", "No changes.");
   await db.update(categories).set(set).where(eq(categories.id, id));
-  revalidateTag("categories", "max");
+  // revalidateTag removed — moved to route handler
   const rows = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
   return map(rows[0]);
 }
@@ -63,5 +63,5 @@ export async function deleteCategory(user: SessionUser, id: number): Promise<voi
   const existing = await db.select({ id: categories.id }).from(categories).where(eq(categories.id, id)).limit(1);
   if (!existing[0]) throw notFound("Category not found.");
   await db.delete(categories).where(eq(categories.id, id));
-  revalidateTag("categories", "max");
+  // revalidateTag removed — moved to route handler
 }
