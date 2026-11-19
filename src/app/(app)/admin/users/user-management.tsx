@@ -6,13 +6,14 @@ import type { User } from "@/lib/db/schema";
 
 interface Props {
   initialUsers: User[];
+  currentUserId: number;
 }
 
 type RoleValue = "admin" | "agent" | "customer";
 
-export function UserManagement({ initialUsers }: Props) {
+export function UserManagement({ initialUsers, currentUserId }: Props) {
   const router = useRouter();
-  const [users, setUsers] = useState(initialUsers);
+  const [users] = useState(initialUsers);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<{
     name: string;
@@ -36,7 +37,11 @@ export function UserManagement({ initialUsers }: Props) {
     if (res.ok) {
       setShowForm(false);
       setFormData({ name: "", email: "", password: "", role: "customer" });
+      // Force server component to re-render with fresh data
       router.refresh();
+    } else {
+      const error = await res.json().catch(() => ({ error: { message: "Failed to create user" } }));
+      alert(error.error?.message || "Failed to create user");
     }
   }
 
@@ -44,7 +49,10 @@ export function UserManagement({ initialUsers }: Props) {
     if (!confirm("Delete this user?")) return;
     const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setUsers(users.filter((u) => u.id !== id));
+      // Force server component to re-render with fresh data
+      router.refresh();
+    } else {
+      alert("Failed to delete user");
     }
   }
 
@@ -55,11 +63,11 @@ export function UserManagement({ initialUsers }: Props) {
       body: JSON.stringify({ is_active: !isActive }),
     });
     if (res.ok) {
-      setUsers(
-        users.map((u) =>
-          u.id === id ? { ...u, isActive: !u.isActive } : u
-        )
-      );
+      // Force server component to re-render with fresh data from DB
+      router.refresh();
+    } else {
+      const error = await res.json().catch(() => ({ error: { message: "Failed to update user" } }));
+      alert(error.error?.message || "Failed to update user status");
     }
   }
 
@@ -153,24 +161,32 @@ export function UserManagement({ initialUsers }: Props) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <button
-                    onClick={() => handleToggleActive(u.id, u.isActive)}
-                    className={`px-3 py-1 rounded text-xs ${
-                      u.isActive
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "bg-red-500/20 text-red-300"
-                    }`}
-                  >
-                    {u.isActive ? "Active" : "Inactive"}
-                  </button>
+                  {u.id === currentUserId ? (
+                    <span className="px-3 py-1 rounded text-xs bg-gray-700 text-gray-400">
+                      You
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleToggleActive(u.id, u.isActive)}
+                      className={`px-3 py-1 rounded text-xs ${
+                        u.isActive
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "bg-red-500/20 text-red-300"
+                      }`}
+                    >
+                      {u.isActive ? "Active" : "Inactive"}
+                    </button>
+                  )}
                 </td>
                 <td className="px-4 py-3">
-                  <button
-                    onClick={() => handleDelete(u.id)}
-                    className="text-red-400 hover:text-red-300 text-sm"
-                  >
-                    Delete
-                  </button>
+                  {u.id !== currentUserId && (
+                    <button
+                      onClick={() => handleDelete(u.id)}
+                      className="text-red-400 hover:text-red-300 text-sm"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

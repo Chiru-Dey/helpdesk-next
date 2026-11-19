@@ -14,8 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "HelpDesk",
-  description:
-    "Customer-support ticketing built with Next.js, TiDB and Drizzle ORM",
+  description: "Customer support ticketing system",
 };
 
 export default function RootLayout({
@@ -24,9 +23,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>

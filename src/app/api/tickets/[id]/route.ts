@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { fromApiError } from "@/lib/api/respond";
 import { requireAuth } from "@/lib/auth/guards";
@@ -21,6 +21,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
   try {
     const ticket = await patchTicket(guard.user, Number(id), await req.json());
     revalidateTag("tickets", "max");
+    revalidatePath(`/tickets/${id}`);
+    revalidatePath("/tickets");
     return NextResponse.json(ticket);
   }
   catch (e) { return fromApiError(e); }
@@ -33,6 +35,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   try {
     await deleteTicket(guard.user, Number(id));
     revalidateTag("tickets", "max");
+    revalidatePath("/tickets");
     return NextResponse.json({ deleted: true });
   }
   catch (e) { return fromApiError(e); }

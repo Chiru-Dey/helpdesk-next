@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache"; // ← Add revalidatePath
 import { NextResponse } from "next/server";
 import { fromApiError } from "@/lib/api/respond";
 import { requireAuth } from "@/lib/auth/guards";
@@ -20,6 +20,7 @@ export async function POST(request: Request) {
   try {
     const ticket = await createTicket(guard.user, await request.json());
     revalidateTag("tickets", "max");
+    revalidatePath("/tickets");
     return NextResponse.json(ticket, { status: 201 });
   } catch (e) { return fromApiError(e); }
 }

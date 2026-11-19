@@ -10,7 +10,7 @@ interface Props {
 
 export function CategoryManagement({ initialCategories }: Props) {
   const router = useRouter();
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories] = useState(initialCategories);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -27,7 +27,11 @@ export function CategoryManagement({ initialCategories }: Props) {
     if (res.ok) {
       setShowForm(false);
       setFormData({ name: "", description: "" });
+      // Force server component to re-render with fresh data
       router.refresh();
+    } else {
+      const error = await res.json().catch(() => ({ error: { message: "Failed to create category" } }));
+      alert(error.error?.message || "Failed to create category");
     }
   }
 
@@ -35,7 +39,10 @@ export function CategoryManagement({ initialCategories }: Props) {
     if (!confirm("Delete this category?")) return;
     const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setCategories(categories.filter((c) => c.id !== id));
+      // Force server component to re-render with fresh data
+      router.refresh();
+    } else {
+      alert("Failed to delete category");
     }
   }
 

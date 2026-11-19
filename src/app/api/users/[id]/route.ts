@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { fromApiError, fromZodError } from "@/lib/api/respond";
 import { requireRole } from "@/lib/auth/guards";
@@ -24,6 +24,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   try {
     const user = await patchUser(guard.user, Number(id), parsed.data);
     revalidateTag("users", "max");
+    revalidatePath("/admin/users");
     return NextResponse.json(user);
   }
   catch (e) { return fromApiError(e); }
@@ -36,6 +37,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   try {
     await deleteUser(guard.user, Number(id));
     revalidateTag("users", "max");
+    revalidatePath("/admin/users");
     return NextResponse.json({ deleted: true });
   }
   catch (e) { return fromApiError(e); }

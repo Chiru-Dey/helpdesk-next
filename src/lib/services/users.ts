@@ -65,6 +65,11 @@ export async function createUser(admin: SessionUser, body: unknown): Promise<Use
 export async function patchUser(admin: SessionUser, id: number, body: unknown): Promise<UserItem> {
   assertAdmin(admin);
   const input = updateUserSchema.parse(body);
+    // Prevent admin from deactivating themselves
+  if (id === admin.id && input.is_active === false) {
+    throw new ApiError(400, "validation_error", "Cannot deactivate your own account.");
+  }
+
   const existing = await db.select().from(users).where(eq(users.id, id)).limit(1);
   if (!existing[0]) throw notFound("User not found.");
 

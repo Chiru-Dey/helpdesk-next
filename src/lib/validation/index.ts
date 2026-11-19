@@ -69,12 +69,17 @@ export const statusSchema = z.object({
 });
 
 export const ticketListSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  per_page: z.coerce.number().int().min(1).max(100).default(20),
-  status: z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
-  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-  search: z.string().trim().max(200).optional(),
-});
+  page: z.coerce.number().int().positive().default(1),
+  per_page: z.coerce.number().int().positive().max(100).default(20),
+  status: z.enum(["open", "in_progress", "resolved", "closed"]).optional().or(z.literal("")),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional().or(z.literal("")),
+  search: z.string().optional().or(z.literal("")),
+}).transform((data) => ({
+  ...data,
+  status: data.status === "" ? undefined : data.status,
+  priority: data.priority === "" ? undefined : data.priority,
+  search: data.search === "" ? undefined : data.search,
+}));
 
 // ── Comments ──
 export const createCommentSchema = z.object({

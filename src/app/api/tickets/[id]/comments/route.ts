@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { fromApiError } from "@/lib/api/respond";
 import { requireAuth } from "@/lib/auth/guards";
@@ -23,8 +23,10 @@ export async function POST(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   try {
     const comment = await addComment(guard.user, Number(id), await req.json());
+    // Invalidate cache aggressively
     revalidateTag(`comments:${id}`, "max");
     revalidateTag("tickets", "max");
+    revalidatePath(`/tickets/${id}`);
     return NextResponse.json(comment, { status: 201 });
   } catch (e) { return fromApiError(e); }
 }

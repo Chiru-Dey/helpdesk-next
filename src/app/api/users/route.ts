@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { fromApiError, fromZodError } from "@/lib/api/respond";
 import { requireRole } from "@/lib/auth/guards";
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
   try {
     const user = await createUser(guard.user, parsed.data);
     revalidateTag("users", "max");
+    revalidatePath("/admin/users");
     return NextResponse.json(user, { status: 201 });
   } catch (e) { return fromApiError(e); }
 }
