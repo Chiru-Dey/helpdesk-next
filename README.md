@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HelpDesk - Customer Support Ticketing System
 
-## Getting Started
+A modern, full-stack customer support ticketing system built with Next.js 16, featuring role-based access control, real-time updates, and automated email notifications.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![TiDB](https://img.shields.io/badge/TiDB-Serverless-orange)
+![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black)
+
+## 🌟 Features
+
+### Core Functionality
+- **Multi-role authentication** (Admin, Agent, Customer) with JWT + rotating refresh tokens
+- **Ticket lifecycle management** with state machine enforcement (open → in_progress → resolved → closed)
+- **Real-time comments** with public/internal note distinction
+- **Category-based organization** for ticket classification
+- **Dashboard analytics** showing open tickets, unassigned count, resolved today, and priority breakdown
+
+### Advanced Features
+- **Automated email notifications** via Brevo SMTP:
+  - Ticket assignment alerts to agents
+  - Status change notifications to customers
+  - Daily digest summaries for staff
+- **Cache Components** for optimized performance:
+  - `"use cache"` directive for read operations
+  - `revalidateTag` for targeted cache invalidation
+  - `revalidatePath` for route-specific refresh
+- **Server/client component separation** for optimal hydration
+- **Playwright E2E testing** covering auth, authorization, business logic, and mobile viewports
+
+### Admin Capabilities
+- User management (create, deactivate, delete)
+- Category CRUD operations
+- Ticket assignment and status transitions
+- Self-protection: admins cannot deactivate themselves
+
+### Security
+- Role-based access control (RBAC)
+- State machine enforcement prevents invalid transitions (422 errors)
+- Cross-user data isolation
+- CSRF protection via SameSite cookies
+- Rate limiting ready (via Vercel)
+
+## 🚀 Tech Stack
+
+### Frontend
+- **Next.js 16.4.6** with App Router and Turbopack
+- **React 19** with Server Components
+- **Tailwind CSS** for styling
+- **Playwright** for E2E testing
+
+### Backend
+- **Next.js API Routes** with edge runtime support
+- **Zod** for schema validation
+- **bcryptjs** for password hashing
+- **jose** for JWT handling
+
+### Database
+- **TiDB Cloud Serverless** (MySQL-compatible)
+- **Drizzle ORM** with type-safe queries
+- **Cache Components** for optimized reads
+
+### Infrastructure
+- **Vercel** for deployment
+- **Brevo** for transactional emails
+- **GitHub Actions** for CI/CD
+
+## 📋 Prerequisites
+
+- Node.js 18+
+- npm 9+
+- TiDB Cloud account (free tier available)
+- Brevo account for email (optional, gracefully degrades)
+
+## 🛠️ Setup
+
+### 1. Clone and install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+git clone https://github.com/yourusername/helpdesk-next.git
+cd helpdesk-next
+npm install
